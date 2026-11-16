@@ -1,6 +1,8 @@
 <img src="docs/images/icon.png" width="64" align="left" alt="" />
 
-# Xbox Control for SolidWorks
+# Xbox Control <sub>for SolidWorks</sub>
+
+**By Kevin Ouellette**
 
 Move around SOLIDWORKS models with an Xbox controller. Orbit, walk forward, strafe, rise, roll
 and zoom at the same time, with analog speed, and remap every button and stick in a modern
@@ -8,7 +10,7 @@ settings app.
 
 <br clear="left" />
 
-![Xbox Control Settings](docs/images/settings.png)
+![Xbox Control for SolidWorks settings](docs/images/settings.png)
 
 ## Features
 
@@ -26,7 +28,7 @@ settings app.
 
 ## Install
 
-1. Download **`XboxControl-1.0.0.msi`** from the [latest release](https://github.com/kevinoue/Xbox-Control/releases/latest).
+1. Download **`XboxControl-1.0.1.msi`** from the [latest release](https://github.com/kevinoue/Xbox-Control/releases/latest).
 2. Run it and click **Install**. It installs for your Windows account only; no administrator
    rights needed.
 3. Restart SolidWorks.
@@ -65,8 +67,8 @@ perspective on (X) it feels more like walking in.
 
 ## Change the controls
 
-Open **Xbox Control Settings** from the Start menu, or in SolidWorks from **Tools > Xbox Control
-Settings...**.
+Open **Xbox Control for SolidWorks** from the Start menu, or in SolidWorks from **Tools > Xbox
+Control Settings...**.
 
 <img src="docs/images/settings-dropdown.png" width="370" align="right" alt="Choosing an action" />
 
@@ -135,6 +137,10 @@ for the current user (restart SolidWorks to load a new build).
 | `Xbox Control/` | The original keystroke-based Walk-through app |
 | `tools/AddinDev` | Load/unload the add-in in a running SolidWorks, run its in-process self-test, simulate button presses |
 | `tools/SwViewBench` | Times SolidWorks view API calls from a separate process |
+
+## Credits
+
+Created by **Kevin Ouellette**.
 
 ## License
 

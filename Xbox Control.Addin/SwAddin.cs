@@ -23,7 +23,7 @@ namespace XboxControl.Addin
         public const string ClassId = "682711DD-EBC4-4666-B8A9-33FCF8AB5C09";
         public const string ProgIdName = "XboxControl.SolidWorksAddin";
         internal const string Title = "Xbox Control";
-        internal const string Description = "Move around models with an Xbox controller";
+        internal const string Description = "Move around models with an Xbox controller. By Kevin Ouellette";
         internal const string SettingsAppName = "XboxControlSettings.exe";
 
         private const string SettingsMenu = "Xbox Control Settings...@&Tools";

@@ -13,7 +13,7 @@
   <?define AddinProgId = XboxControl.SolidWorksAddin ?>
 
   <Package Name="Xbox Control for SolidWorks"
-           Manufacturer="Kevin Oue"
+           Manufacturer="Kevin Ouellette"
            Version="$(var.ProductVersion)"
            UpgradeCode="{B2D53899-EFD8-4BEB-9550-DB42E3511C9C}"
            Scope="perUser"
@@ -33,7 +33,7 @@
     <WixVariable Id="WixUIDialogBmp" Value="DialogBackground.bmp" />
     <WixVariable Id="WixUIBannerBmp" Value="Banner.bmp" />
     <Property Id="WIXUI_EXITDIALOGOPTIONALTEXT"
-              Value="Restart SolidWorks to start using your controller. Change the buttons any time with Xbox Control Settings (Start menu, or Tools menu in SolidWorks)." />
+              Value="Restart SolidWorks to start using your controller. Change the buttons any time with Xbox Control for SolidWorks in the Start menu, or Tools &gt; Xbox Control Settings in SolidWorks." />
     <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Open Xbox Control Settings" />
     <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
     <Property Id="WixShellExecTarget" Value="[#SettingsExe]" />
@@ -86,7 +86,7 @@
         <RegistryKey Root="HKCU" Key="Software\SolidWorks\Addins\$(var.AddinClsid)" ForceDeleteOnUninstall="yes">
           <RegistryValue Value="0" Type="integer" />
           <RegistryValue Name="Title" Value="Xbox Control" Type="string" />
-          <RegistryValue Name="Description" Value="Move around models with an Xbox controller" Type="string" />
+          <RegistryValue Name="Description" Value="Move around models with an Xbox controller. By Kevin Ouellette" Type="string" />
         </RegistryKey>
         <RegistryKey Root="HKCU" Key="Software\SolidWorks\AddInsStartup\$(var.AddinClsid)" ForceDeleteOnUninstall="yes">
           <RegistryValue Value="1" Type="integer" />
@@ -95,7 +95,7 @@
 
       <Component Id="SettingsExe" Guid="{444DBF0C-1F34-47A0-A797-E16925835FEF}">
         <File Id="SettingsExe" Source="$(var.SettingsDir)\XboxControlSettings.exe" KeyPath="no">
-          <Shortcut Id="SettingsShortcut" Directory="ProgramMenuFolder" Name="Xbox Control Settings"
+          <Shortcut Id="SettingsShortcut" Directory="ProgramMenuFolder" Name="Xbox Control for SolidWorks"
                     Description="Choose what each Xbox controller button does in SolidWorks"
                     WorkingDirectory="INSTALLFOLDER" Icon="AppIcon" Advertise="no" />
         </File>

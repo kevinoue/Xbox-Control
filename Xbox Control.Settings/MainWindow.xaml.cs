@@ -29,6 +29,8 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         settings = NavigationSettings.LoadOrCreate();
+        var version = typeof(MainWindow).Assembly.GetName().Version;
+        VersionText.Text = version is null ? "" : $"Version {version.ToString(3)}";
 
         buttonParts = new()
         {
@@ -217,6 +219,12 @@ public partial class MainWindow : Window
     }
 
     private void Done_Click(object sender, RoutedEventArgs e) => Close();
+
+    private void Link_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+    {
+        Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
+        e.Handled = true;
+    }
 
     // ---- live controller feedback -------------------------------------------------------
 

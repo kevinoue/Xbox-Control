@@ -17,6 +17,8 @@
     <!-- WPF's Windows 11 (Fluent) theme is marked experimental. -->
     <NoWarn>$(NoWarn);WPF0001</NoWarn>
     <ApplicationIcon>Assets/app.ico</ApplicationIcon>
+    <!-- Shown in Task Manager and the file's Properties. -->
+    <AssemblyTitle>Xbox Control for SolidWorks</AssemblyTitle>
   </PropertyGroup>
 
   <ItemGroup>

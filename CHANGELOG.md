@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.1 (2026-11-16)
+
+### Changed
+- The settings app and its Start menu shortcut are now called **Xbox Control for SolidWorks**,
+  with "for SolidWorks" shown next to the title.
+- Credit for Kevin Ouellette in the settings app, the installer, Windows' Apps list (publisher) and
+  SolidWorks' Add-ins list.
+- The settings app shows its version and a link to the project page.
+
 ## 1.0.0 (2026-11-15)
 
 A rewrite. The controller now drives the SolidWorks view directly from a SolidWorks add-in
