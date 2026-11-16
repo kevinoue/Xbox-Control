@@ -25,4 +25,8 @@
     </Reference>
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\Shared\SwConnection.cs" Link="Shared\SwConnection.cs" />
+  </ItemGroup>
+
 </Project>

@@ -1,3 +1,4 @@
+using System;
 using System.Runtime.InteropServices;
 
 namespace Xbox_Control
@@ -104,9 +105,11 @@ namespace Xbox_Control
         /// </summary>
         internal static (float x, float y) RadialDeadzone(short rawX, short rawY)
         {
-            float x = Math.Clamp(rawX / 32767f, -1f, 1f);
-            float y = Math.Clamp(rawY / 32767f, -1f, 1f);
-            float mag = MathF.Sqrt(x * x + y * y);
+            // (Math.Max/Min instead of Math.Clamp/MathF: this file is also compiled into the
+            // .NET Framework 4.8 SolidWorks add-in.)
+            float x = Math.Max(-1f, rawX / 32767f);
+            float y = Math.Max(-1f, rawY / 32767f);
+            float mag = (float)Math.Sqrt(x * x + y * y);
             if (mag <= StickDeadzone) return (0f, 0f);
             float scaled = Math.Min(1f, (mag - StickDeadzone) / (1f - StickDeadzone));
             return (x / mag * scaled, y / mag * scaled);

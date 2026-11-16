@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    SolidWorks add-in: drives the view directly through the SolidWorks API from inside the
+    SolidWorks process (no keystrokes, no focus tricks, every axis analog and simultaneous).
+    SolidWorks add-ins must be .NET Framework; 4.8 is what SolidWorks 2023 and later require.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>XboxControlAddin</AssemblyName>
+    <RootNamespace>XboxControl.Addin</RootNamespace>
+    <!-- New assembly version on every build, so a rebuilt add-in can be loaded into a running
+         SolidWorks next to the old one (see tools/register-addin.ps1). -->
+    <Deterministic>false</Deterministic>
+    <AssemblyVersion>0.1.*</AssemblyVersion>
+    <FileVersion>0.1.0.0</FileVersion>
+    <SolidWorksApiDir Condition="'$(SolidWorksApiDir)' == ''">C:\Program Files\SOLIDWORKS Corp\SOLIDWORKS\api\redist</SolidWorksApiDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- .NET Framework 4.8 reference assemblies (build-time only; the targeting pack isn't installed). -->
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Windows.Forms" />
+    <!-- Embedded interop types: nothing from SolidWorks ships with the add-in, and one build
+         loads in whichever SolidWorks version is installed (2023 and later). -->
+    <Reference Include="SolidWorks.Interop.sldworks">
+      <HintPath>$(SolidWorksApiDir)\SolidWorks.Interop.sldworks.dll</HintPath>
+      <EmbedInteropTypes>true</EmbedInteropTypes>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="SolidWorks.Interop.swpublished">
+      <HintPath>$(SolidWorksApiDir)\SolidWorks.Interop.swpublished.dll</HintPath>
+      <EmbedInteropTypes>true</EmbedInteropTypes>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Same controller reader as the keystroke app. -->
+    <Compile Include="..\Xbox Control\XInputGamepad.cs" Link="Shared\XInputGamepad.cs" />
+  </ItemGroup>
+
+</Project>
