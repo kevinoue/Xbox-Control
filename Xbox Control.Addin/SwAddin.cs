@@ -1,4 +1,6 @@
-using System;
+﻿using System;
+using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
 using SolidWorks.Interop.sldworks;
@@ -22,8 +24,13 @@ namespace XboxControl.Addin
         public const string ProgIdName = "XboxControl.SolidWorksAddin";
         internal const string Title = "Xbox Control";
         internal const string Description = "Move around models with an Xbox controller";
+        internal const string SettingsAppName = "XboxControlSettings.exe";
+
+        private const string SettingsMenu = "Xbox Control Settings...@&Tools";
+        private static readonly int[] MenuDocTypes = { 0, 1, 2, 3 }; // none, part, assembly, drawing
 
         private ISldWorks? sw;
+        private int cookie;
         private NavigationLoop? loop;
 
         public bool ConnectToSW(object ThisSW, int Cookie)
@@ -31,9 +38,12 @@ namespace XboxControl.Addin
             try
             {
                 sw = (ISldWorks)ThisSW;
+                cookie = Cookie;
                 sw.SetAddinCallbackInfo2(0, this, Cookie);
-                var settings = NavigationSettings.LoadOrCreate();
-                loop = new NavigationLoop(sw, settings);
+                loop = new NavigationLoop(sw, NavigationSettings.DefaultPath, OpenSettings);
+                foreach (int docType in MenuDocTypes)
+                    sw.AddMenuItem5(docType, cookie, SettingsMenu, -1, nameof(OpenSettings), "",
+                        "Map the Xbox controller's buttons and sticks", "");
                 Log.Info($"Connected to SolidWorks {sw.RevisionNumber()} (add-in {typeof(SwAddin).Assembly.GetName().Version})");
                 return true;
             }
@@ -50,7 +60,11 @@ namespace XboxControl.Addin
             {
                 loop?.Dispose();
                 loop = null;
-                if (sw != null) Marshal.ReleaseComObject(sw);
+                if (sw != null)
+                {
+                    foreach (int docType in MenuDocTypes) sw.RemoveMenu(docType, SettingsMenu, "");
+                    Marshal.ReleaseComObject(sw);
+                }
                 sw = null;
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
@@ -61,6 +75,26 @@ namespace XboxControl.Addin
                 Log.Error("DisconnectFromSW", ex);
             }
             return true;
+        }
+
+        /// <summary>Tools menu callback (and the "Open these settings" button action).</summary>
+        public void OpenSettings()
+        {
+            try
+            {
+                string dir = Path.GetDirectoryName(typeof(SwAddin).Assembly.Location)!;
+                string exe = Path.Combine(dir, SettingsAppName);
+                if (File.Exists(exe))
+                    Process.Start(new ProcessStartInfo(exe) { UseShellExecute = true });
+                else
+                    sw?.SendMsgToUser2($"The Xbox Control Settings app wasn't found:\n{exe}" +
+                        $"\n\nYou can also edit {NavigationSettings.DefaultPath} by hand.",
+                        1 /* warning */, 2 /* OK */);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("OpenSettings", ex);
+            }
         }
 
         // ---- diagnostics, called late-bound from tools/AddinDev ----------------------------

@@ -3,9 +3,11 @@
   Registers the Xbox Control SolidWorks add-in for the current user (no administrator rights).
 
 .DESCRIPTION
-  Copies the built add-in to %LOCALAPPDATA%\XboxControl\Addin\<version>\ (so SolidWorks never
-  locks the build output), registers its COM class under HKCU\Software\Classes, and adds the
-  SolidWorks add-in keys. Run it again after every build; each build has a new version.
+  Development use (users install the MSI instead). Copies the built add-in, and the settings app
+  if it is built, to %LOCALAPPDATA%\XboxControl\Addin\<version>\ (so SolidWorks never locks the
+  build output), registers its COM class under HKCU\Software\Classes, and adds the SolidWorks
+  add-in keys. Run it again after every build; each Debug build has a new version, and a running
+  SolidWorks keeps the version it loaded first, so restart SolidWorks to pick up a new build.
 
   If SolidWorks runs as administrator it ignores per-user COM registrations. In that case run
   this script from an elevated PowerShell, which registers for all users instead.
@@ -45,6 +47,9 @@ $name = [Reflection.AssemblyName]::GetAssemblyName($Dll)
 $dest = Join-Path $env:LOCALAPPDATA "XboxControl\Addin\$($name.Version)"
 New-Item -ItemType Directory -Force $dest | Out-Null
 Copy-Item (Join-Path (Split-Path $Dll) '*') $dest -Force
+# The settings app goes next to the add-in (the Tools menu entry starts it from there).
+$settingsDir = Join-Path $PSScriptRoot '..\Xbox Control.Settings\bin\Debug\net10.0-windows'
+if (Test-Path $settingsDir) { Copy-Item (Join-Path $settingsDir '*') $dest -Recurse -Force }
 $deployed = Join-Path $dest (Split-Path $Dll -Leaf)
 $codeBase = 'file:///' + $deployed.Replace([char]92, [char]47)
 

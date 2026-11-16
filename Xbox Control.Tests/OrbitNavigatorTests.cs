@@ -6,7 +6,7 @@ namespace Xbox_Control.Tests;
 public class OrbitNavigatorTests
 {
     private const double Deg = Math.PI / 180;
-    private readonly List<ViewCommand> commands = new();
+    private readonly List<ButtonAction> commands = new();
 
     private static GamepadSnapshot Pad(float lx = 0, float ly = 0, float rx = 0, float ry = 0,
         float lt = 0, float rt = 0, GamepadButtons buttons = GamepadButtons.None) => new(lx, ly, rx, ry, lt, rt, buttons);
@@ -25,6 +25,8 @@ public class OrbitNavigatorTests
         commands.Clear();
         return nav.Update(pad, dt, commands);
     }
+
+    // ---- default layout -----------------------------------------------------------------
 
     [Fact]
     public void Neutral_input_does_nothing()
@@ -46,7 +48,9 @@ public class OrbitNavigatorTests
     public void Right_stick_up_tips_the_front_up_and_invert_flips_it()
     {
         Assert.True(Step(Ready(), Pad(ry: 1)).Pitch < 0);
-        Assert.True(Step(Ready(new NavigationSettings { InvertOrbitY = true }), Pad(ry: 1)).Pitch > 0);
+        var inverted = new NavigationSettings();
+        inverted.Invert[AnalogControl.RightStickY] = true;
+        Assert.True(Step(Ready(inverted), Pad(ry: 1)).Pitch > 0);
     }
 
     [Fact]
@@ -56,7 +60,6 @@ public class OrbitNavigatorTests
         var m = Step(Ready(), Pad(lx: 1), dt: 0.1);
         Assert.Equal(-0.1, m.PanX, 9);
         Assert.Equal(0, m.PanY);
-        Assert.Equal(0.1, Step(Ready(new NavigationSettings { InvertPanX = true }), Pad(lx: 1), dt: 0.1).PanX, 9);
     }
 
     [Fact]
@@ -66,7 +69,6 @@ public class OrbitNavigatorTests
         Assert.Equal(Math.Pow(3, 0.1), Step(nav, Pad(ly: 1), dt: 0.1).Zoom, 9);
         Assert.Equal(Math.Pow(3, -0.1), Step(nav, Pad(ly: -1), dt: 0.1).Zoom, 9);
         Assert.Equal(0, Step(nav, Pad(ly: 1)).PanY);
-        Assert.True(Step(Ready(new NavigationSettings { InvertForward = true }), Pad(ly: 1)).Zoom < 1);
     }
 
     [Fact]
@@ -83,7 +85,7 @@ public class OrbitNavigatorTests
     public void Bumpers_roll_left_and_right()
     {
         var nav = Ready();
-        Assert.True(Step(nav, Pad(buttons: GamepadButtons.LeftShoulder)).Roll > 0);
+        Assert.True(Step(nav, Pad(buttons: GamepadButtons.LeftShoulder)).Roll > 0);  // counter-clockwise
         Assert.True(Step(nav, Pad(buttons: GamepadButtons.RightShoulder)).Roll < 0);
         Assert.Equal(0, Step(nav, Pad(buttons: GamepadButtons.LeftShoulder | GamepadButtons.RightShoulder)).Roll);
     }
@@ -96,13 +98,36 @@ public class OrbitNavigatorTests
     }
 
     [Fact]
+    public void Default_buttons_map_to_their_actions()
+    {
+        var nav = Ready();
+        var expected = new (GamepadButtons, ButtonAction)[]
+        {
+            (GamepadButtons.A, ButtonAction.ZoomToFit),
+            (GamepadButtons.B, ButtonAction.ZoomToSelection),
+            (GamepadButtons.Y, ButtonAction.ViewIsometric),
+            (GamepadButtons.X, ButtonAction.TogglePerspective),
+            (GamepadButtons.DPadUp, ButtonAction.ViewTop),
+            (GamepadButtons.DPadDown, ButtonAction.ViewFront),
+            (GamepadButtons.DPadLeft, ButtonAction.ViewLeft),
+            (GamepadButtons.DPadRight, ButtonAction.ViewRight),
+        };
+        foreach (var (button, action) in expected)
+        {
+            Step(nav, Pad(buttons: button));
+            Assert.Equal(new[] { action }, commands);
+            Step(nav, Pad());
+        }
+    }
+
+    [Fact]
     public void Precision_click_toggles_slow_mode_once_per_press()
     {
         var nav = Ready();
         double normal = Step(nav, Pad(rx: 1)).Yaw;
 
         Step(nav, Pad(rx: 1, buttons: GamepadButtons.LeftThumb));
-        Assert.Equal(new[] { ViewCommand.TogglePrecision }, commands);
+        Assert.Equal(new[] { ButtonAction.TogglePrecision }, commands);
         Step(nav, Pad(rx: 1, buttons: GamepadButtons.LeftThumb)); // still held: no repeat
         Assert.Empty(commands);
         Assert.True(nav.Precision);
@@ -117,7 +142,7 @@ public class OrbitNavigatorTests
         Assert.Empty(commands);
         Step(nav, Pad());
         Step(nav, Pad(buttons: GamepadButtons.A));
-        Assert.Equal(new[] { ViewCommand.ZoomToFit }, commands);
+        Assert.Equal(new[] { ButtonAction.ZoomToFit }, commands);
     }
 
     [Fact]
@@ -130,34 +155,11 @@ public class OrbitNavigatorTests
     }
 
     [Fact]
-    public void Buttons_map_to_view_commands()
-    {
-        var nav = Ready();
-        var expected = new (GamepadButtons, ViewCommand)[]
-        {
-            (GamepadButtons.A, ViewCommand.ZoomToFit),
-            (GamepadButtons.B, ViewCommand.ZoomToSelection),
-            (GamepadButtons.Y, ViewCommand.Isometric),
-            (GamepadButtons.X, ViewCommand.TogglePerspective),
-            (GamepadButtons.DPadUp, ViewCommand.Top),
-            (GamepadButtons.DPadDown, ViewCommand.Front),
-            (GamepadButtons.DPadLeft, ViewCommand.Left),
-            (GamepadButtons.DPadRight, ViewCommand.Right),
-        };
-        foreach (var (button, command) in expected)
-        {
-            Step(nav, Pad(buttons: button));
-            Assert.Equal(new[] { command }, commands);
-            Step(nav, Pad());
-        }
-    }
-
-    [Fact]
-    public void Start_pauses_all_motion_until_pressed_again()
+    public void Menu_pauses_all_motion_until_pressed_again()
     {
         var nav = Ready();
         Step(nav, Pad(buttons: GamepadButtons.Start));
-        Assert.Equal(new[] { ViewCommand.TogglePause }, commands);
+        Assert.Equal(new[] { ButtonAction.TogglePause }, commands);
         Assert.True(Step(nav, Pad(rx: 1, rt: 1, buttons: GamepadButtons.A)).IsNone);
         Assert.Empty(commands); // other buttons ignored while paused
         Step(nav, Pad());
@@ -182,6 +184,84 @@ public class OrbitNavigatorTests
     {
         Assert.Equal(expected, new OrbitNavigator(new NavigationSettings()).Curve(input), 9);
     }
+
+    // ---- remapping ----------------------------------------------------------------------
+
+    [Fact]
+    public void Swapping_the_sticks_swaps_orbit_and_move()
+    {
+        var s = new NavigationSettings();
+        s.Axes[AnalogControl.LeftStickX] = AxisAction.OrbitHorizontal;
+        s.Axes[AnalogControl.RightStickX] = AxisAction.MoveSideways;
+        var nav = Ready(s);
+        var left = Step(nav, Pad(lx: 1));
+        Assert.True(left.Yaw > 0 && left.PanX == 0);
+        var right = Step(nav, Pad(rx: 1));
+        Assert.True(right.PanX < 0 && right.Yaw == 0);
+    }
+
+    [Fact]
+    public void Unmapped_control_does_nothing()
+    {
+        var s = new NavigationSettings();
+        s.Axes[AnalogControl.Triggers] = AxisAction.None;
+        s.Buttons[GamepadButtons.A] = ButtonAction.None;
+        var nav = Ready(s);
+        Assert.True(Step(nav, Pad(rt: 1, buttons: GamepadButtons.A)).IsNone);
+        Assert.Empty(commands);
+    }
+
+    [Fact]
+    public void Hold_actions_move_while_held_and_add_to_the_sticks()
+    {
+        var s = new NavigationSettings();
+        s.Buttons[GamepadButtons.DPadUp] = ButtonAction.MoveForward;
+        s.Buttons[GamepadButtons.DPadRight] = ButtonAction.OrbitRight;
+        var nav = Ready(s);
+        var m = Step(nav, Pad(buttons: GamepadButtons.DPadUp | GamepadButtons.DPadRight), dt: 0.1);
+        Assert.Equal(Math.Pow(3, 0.1), m.Zoom, 9);
+        Assert.True(m.Yaw > 0);
+        Assert.Empty(commands); // hold actions aren't presses
+        // stick + held button on the same axis is capped at full speed
+        Assert.Equal(Math.Pow(3, 0.1), Step(nav, Pad(ly: 1, buttons: GamepadButtons.DPadUp), dt: 0.1).Zoom, 9);
+    }
+
+    [Fact]
+    public void Pause_can_be_moved_to_another_button()
+    {
+        var s = new NavigationSettings();
+        s.Buttons[GamepadButtons.Start] = ButtonAction.None;
+        s.Buttons[GamepadButtons.Back] = ButtonAction.TogglePause;
+        var nav = Ready(s);
+        Step(nav, Pad(buttons: GamepadButtons.Start));
+        Assert.False(nav.Paused);
+        Step(nav, Pad());
+        Step(nav, Pad(buttons: GamepadButtons.Back));
+        Assert.True(nav.Paused);
+    }
+
+    [Fact]
+    public void Removing_the_pause_button_while_paused_unpauses()
+    {
+        var nav = Ready();
+        Step(nav, Pad(buttons: GamepadButtons.Start));
+        Assert.True(nav.Paused);
+        var s = new NavigationSettings();
+        s.Buttons[GamepadButtons.Start] = ButtonAction.None;
+        nav.ApplySettings(s);
+        Assert.False(nav.Paused);
+    }
+
+    [Fact]
+    public void Every_move_orbit_and_roll_button_action_is_a_hold_action()
+    {
+        foreach (ButtonAction a in Enum.GetValues<ButtonAction>())
+        {
+            string name = a.ToString();
+            bool looksLikeHold = name.StartsWith("Move") || name.StartsWith("Orbit") || name.StartsWith("Roll");
+            Assert.Equal(looksLikeHold, ControlMapping.IsHold(a));
+        }
+    }
 }
 
 public class NavigationSettingsTests
@@ -194,29 +274,56 @@ public class NavigationSettingsTests
         {
             "# comment",
             "RotateSpeedDeg = 90   # trailing comment",
-            "invertorbity = true",
             "PanSpeed = not-a-number",
             "Unknown = 5",
             "garbage line",
+            "Axis.LeftStickX = OrbitHorizontal",
+            "axis.triggers = nonsense",
+            "Invert.RightStickY = true",
+            "Button.A = ViewBottom",
+            "Button.Start = MoveUp",
+            "Button.None = ZoomToFit",
         });
         Assert.Equal(90, s.RotateSpeedDeg);
-        Assert.True(s.InvertOrbitY);
         Assert.Equal(1.0, s.PanSpeed);
+        Assert.Equal(AxisAction.OrbitHorizontal, s.Axes[AnalogControl.LeftStickX]);
+        Assert.Equal(AxisAction.MoveVertical, s.Axes[AnalogControl.Triggers]); // default kept
+        Assert.True(s.Invert[AnalogControl.RightStickY]);
+        Assert.Equal(ButtonAction.ViewBottom, s.Buttons[GamepadButtons.A]);
+        Assert.Equal(ButtonAction.MoveUp, s.Buttons[GamepadButtons.Start]);
+        Assert.False(s.Buttons.ContainsKey(GamepadButtons.None));
     }
 
     [Fact]
-    public void Ini_round_trips()
+    public void Ini_round_trips_speeds_and_mapping()
     {
-        var a = new NavigationSettings { ZoomSpeed = 4.5, InvertPanX = true, TickMs = 8 };
+        var a = new NavigationSettings { ZoomSpeed = 4.5, TickMs = 8 };
+        a.Axes[AnalogControl.RightStickY] = AxisAction.Roll;
+        a.Invert[AnalogControl.LeftStickX] = true;
+        a.Buttons[GamepadButtons.RightThumb] = ButtonAction.OpenSettings;
         var b = new NavigationSettings();
         b.Parse(a.ToIni().Split('\n'));
         Assert.Equal(4.5, b.ZoomSpeed);
-        Assert.True(b.InvertPanX);
         Assert.Equal(8, b.TickMs);
+        Assert.Equal(AxisAction.Roll, b.Axes[AnalogControl.RightStickY]);
+        Assert.True(b.Invert[AnalogControl.LeftStickX]);
+        Assert.Equal(ButtonAction.OpenSettings, b.Buttons[GamepadButtons.RightThumb]);
     }
 
     [Fact]
-    public void Missing_file_is_created_with_defaults()
+    public void Reset_restores_the_default_layout()
+    {
+        var s = new NavigationSettings { RotateSpeedDeg = 10 };
+        s.Axes[AnalogControl.LeftStickY] = AxisAction.None;
+        s.Buttons[GamepadButtons.A] = ButtonAction.None;
+        s.ResetToDefaults();
+        Assert.Equal(160, s.RotateSpeedDeg);
+        Assert.Equal(AxisAction.MoveForward, s.Axes[AnalogControl.LeftStickY]);
+        Assert.Equal(ButtonAction.ZoomToFit, s.Buttons[GamepadButtons.A]);
+    }
+
+    [Fact]
+    public void Missing_file_is_created_with_defaults_and_save_overwrites()
     {
         string path = Path.Combine(Path.GetTempPath(), $"xbox-addin-{Guid.NewGuid():N}.ini");
         try
@@ -224,6 +331,11 @@ public class NavigationSettingsTests
             var s = NavigationSettings.LoadOrCreate(path);
             Assert.True(File.Exists(path));
             Assert.Equal(160, s.RotateSpeedDeg);
+
+            s.PanSpeed = 2.5;
+            s.Save(path);
+            Assert.Equal(2.5, NavigationSettings.LoadOrCreate(path).PanSpeed);
+            Assert.False(File.Exists(path + ".tmp"));
         }
         finally
         {

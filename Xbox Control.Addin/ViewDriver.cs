@@ -7,9 +7,6 @@ namespace XboxControl.Addin
     {
         private const int DocPart = 1, DocAssembly = 2;
 
-        // swStandardViews_e
-        private const int ViewFront = 1, ViewLeft = 3, ViewRight = 4, ViewTop = 5, ViewIsometric = 7;
-
         /// <summary>Apply all axes with graphics updates off, then redraw once.</summary>
         public bool BatchRedraw { get; set; } = true;
 
@@ -39,47 +36,46 @@ namespace XboxControl.Addin
             if (BatchRedraw) view.GraphicsRedraw(null);
         }
 
-        /// <summary>Runs a button command. Returns a status message, or null.</summary>
-        public string? Run(IModelDoc2 doc, IModelView view, ViewCommand command)
+        /// <summary>Runs a press action on the active document. Returns a status message, or null.</summary>
+        public string? Run(IModelDoc2 doc, IModelView view, ButtonAction action)
         {
-            bool is3D = Is3D(doc);
-            switch (command)
+            switch (action)
             {
-                case ViewCommand.ZoomToFit:
+                case ButtonAction.ZoomToFit:
                     doc.ViewZoomtofit2();
                     return "Zoom to fit";
-                case ViewCommand.ZoomToSelection:
+                case ButtonAction.ZoomToSelection:
                     if (((ISelectionMgr)(object)doc.SelectionManager).GetSelectedObjectCount2(-1) == 0)
-                        return "Select something first, then press B to zoom to it";
+                        return "Select something first, then press again to zoom to it";
                     doc.ViewZoomToSelection();
                     return "Zoom to selection";
-                case ViewCommand.Isometric when is3D: return NamedView(doc, "*Isometric", ViewIsometric, "Isometric view");
-                case ViewCommand.Front when is3D: return NamedView(doc, "*Front", ViewFront, "Front view");
-                case ViewCommand.Top when is3D: return NamedView(doc, "*Top", ViewTop, "Top view");
-                case ViewCommand.Left when is3D: return NamedView(doc, "*Left", ViewLeft, "Left view");
-                case ViewCommand.Right when is3D: return NamedView(doc, "*Right", ViewRight, "Right view");
-                case ViewCommand.TogglePerspective when is3D:
+                case ButtonAction.TogglePerspective:
+                    if (!Is3D(doc)) return "Not available in drawings";
                     bool on = !view.HasPerspective();
                     if (on) view.AddPerspective(); else view.RemovePerspective();
                     view.GraphicsRedraw(null);
                     return on ? "Perspective on" : "Perspective off";
-                case ViewCommand.Isometric:
-                case ViewCommand.Front:
-                case ViewCommand.Top:
-                case ViewCommand.Left:
-                case ViewCommand.Right:
-                case ViewCommand.TogglePerspective:
-                    return "Not available in drawings";
-                default:
-                    return null;
             }
+
+            var (name, id) = StandardView(action);
+            if (id == 0) return null;
+            if (!Is3D(doc)) return "Not available in drawings";
+            doc.ShowNamedView2(name, id);
+            return ControlMapping.Label(action);
         }
 
-        private static string NamedView(IModelDoc2 doc, string name, int id, string message)
+        /// <summary>Named view and swStandardViews_e id for a view action; id 0 if not a view.</summary>
+        private static (string Name, int Id) StandardView(ButtonAction action) => action switch
         {
-            doc.ShowNamedView2(name, id);
-            return message;
-        }
+            ButtonAction.ViewFront => ("*Front", 1),
+            ButtonAction.ViewBack => ("*Back", 2),
+            ButtonAction.ViewLeft => ("*Left", 3),
+            ButtonAction.ViewRight => ("*Right", 4),
+            ButtonAction.ViewTop => ("*Top", 5),
+            ButtonAction.ViewBottom => ("*Bottom", 6),
+            ButtonAction.ViewIsometric => ("*Isometric", 7),
+            _ => ("", 0),
+        };
 
         private static bool Is3D(IModelDoc2 doc)
         {

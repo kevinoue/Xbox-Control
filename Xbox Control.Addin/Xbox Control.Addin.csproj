@@ -13,12 +13,19 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <AssemblyName>XboxControlAddin</AssemblyName>
     <RootNamespace>XboxControl.Addin</RootNamespace>
-    <!-- New assembly version on every build, so a rebuilt add-in can be loaded into a running
-         SolidWorks next to the old one (see tools/register-addin.ps1). -->
+    <SolidWorksApiDir Condition="'$(SolidWorksApiDir)' == ''">C:\Program Files\SOLIDWORKS Corp\SOLIDWORKS\api\redist</SolidWorksApiDir>
+  </PropertyGroup>
+
+  <!-- Debug: a new assembly version on every build, so tools/register-addin.ps1 can deploy each
+       build side by side. Release: a fixed version that the installer registers. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <Deterministic>false</Deterministic>
     <AssemblyVersion>0.1.*</AssemblyVersion>
     <FileVersion>0.1.0.0</FileVersion>
-    <SolidWorksApiDir Condition="'$(SolidWorksApiDir)' == ''">C:\Program Files\SOLIDWORKS Corp\SOLIDWORKS\api\redist</SolidWorksApiDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
+    <AssemblyVersion>$(Version).0</AssemblyVersion>
+    <FileVersion>$(Version).0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>

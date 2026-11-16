@@ -1,0 +1,25 @@
+<Project Sdk="WixToolset.Sdk/5.0.2">
+
+  <!--
+    Builds XboxControl-<version>.msi: a per-user installer (no administrator rights) that installs
+    the SolidWorks add-in and the settings app and registers the add-in with SolidWorks.
+    Use tools/build-installer.ps1, which builds the inputs first.
+  -->
+
+  <PropertyGroup>
+    <OutputName>XboxControl-$(Version)</OutputName>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <AddinDir Condition="'$(AddinDir)' == ''">$(MSBuildThisFileDirectory)..\Xbox Control.Addin\bin\Release\net48</AddinDir>
+    <SettingsDir Condition="'$(SettingsDir)' == ''">$(MSBuildThisFileDirectory)..\artifacts\settings</SettingsDir>
+    <DefineConstants>ProductVersion=$(Version);AssemblyVersion=$(Version).0;AddinDir=$(AddinDir);SettingsDir=$(SettingsDir);RepoDir=$(MSBuildThisFileDirectory)..</DefineConstants>
+    <!-- ICE91: files in a per-user folder (expected for a per-user install). ICE61: a rebuilt
+         MSI with the same version replaces the installed one (AllowSameVersionUpgrades). -->
+    <SuppressIces>ICE91;ICE61</SuppressIces>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WixToolset.UI.wixext" Version="5.0.2" />
+    <PackageReference Include="WixToolset.Util.wixext" Version="5.0.2" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Settings app: map each button and stick to an action and adjust speeds. Writes the same
+    %APPDATA%\XboxControl\addin.ini the add-in reads; the add-in picks changes up within a second.
+    Opened from SolidWorks (Tools > Xbox Control Settings...) or on its own.
+  -->
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>XboxControlSettings</AssemblyName>
+    <RootNamespace>XboxControl.Settings</RootNamespace>
+    <!-- WPF's Windows 11 (Fluent) theme is marked experimental. -->
+    <NoWarn>$(NoWarn);WPF0001</NoWarn>
+    <ApplicationIcon>Assets/app.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets/app.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Xbox Control\XInputGamepad.cs" Link="Shared\XInputGamepad.cs" />
+    <Compile Include="..\Xbox Control.Addin\ControlMapping.cs" Link="Shared\ControlMapping.cs" />
+    <Compile Include="..\Xbox Control.Addin\NavigationSettings.cs" Link="Shared\NavigationSettings.cs" />
+  </ItemGroup>
+
+</Project>

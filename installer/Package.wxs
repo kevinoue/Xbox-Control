@@ -1,0 +1,112 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+
+  <!--
+    Per-user install into %LOCALAPPDATA%\Programs\Xbox Control. Registers the add-in's COM class
+    under HKCU\Software\Classes and adds it to SolidWorks' add-in list (HKCU), which SolidWorks
+    2023 loads at startup without administrator rights. Everything is removed on uninstall.
+  -->
+
+  <?define AddinClsid = {682711DD-EBC4-4666-B8A9-33FCF8AB5C09} ?>
+  <?define AddinClass = XboxControl.Addin.SwAddin ?>
+  <?define AddinProgId = XboxControl.SolidWorksAddin ?>
+
+  <Package Name="Xbox Control for SolidWorks"
+           Manufacturer="Kevin Oue"
+           Version="$(var.ProductVersion)"
+           UpgradeCode="{B2D53899-EFD8-4BEB-9550-DB42E3511C9C}"
+           Scope="perUser"
+           Compressed="yes">
+
+    <MajorUpgrade AllowSameVersionUpgrades="yes" DowngradeErrorMessage="A newer version of Xbox Control is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Icon Id="AppIcon" SourceFile="$(var.RepoDir)\Xbox Control.Settings\Assets\app.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/kevinoue/Xbox-Control" />
+    <Property Id="ARPCOMMENTS" Value="Move around SolidWorks models with an Xbox controller." />
+
+    <!-- Installer UI: license page, progress, and a finish page that can open the settings app. -->
+    <ui:WixUI Id="WixUI_Minimal" />
+    <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
+    <WixVariable Id="WixUIDialogBmp" Value="DialogBackground.bmp" />
+    <WixVariable Id="WixUIBannerBmp" Value="Banner.bmp" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALTEXT"
+              Value="Restart SolidWorks to start using your controller. Change the buttons any time with Xbox Control Settings (Start menu, or Tools menu in SolidWorks)." />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Open Xbox Control Settings" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
+    <Property Id="WixShellExecTarget" Value="[#SettingsExe]" />
+    <CustomAction Id="LaunchSettings" DllEntry="WixShellExec" BinaryRef="Wix4UtilCA_X64" Impersonate="yes" />
+    <UI>
+      <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="LaunchSettings"
+               Condition="WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed" />
+    </UI>
+
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="ProgramsFolder" Name="Programs">
+        <Directory Id="INSTALLFOLDER" Name="Xbox Control" />
+      </Directory>
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder" />
+
+    <Feature Id="Main" Title="Xbox Control">
+      <ComponentGroupRef Id="Files" />
+    </Feature>
+
+    <ComponentGroup Id="Files" Directory="INSTALLFOLDER">
+      <Component Id="AddinDll" Guid="{75795392-1DC0-47E4-BDF8-FA818EF0B62B}">
+        <File Id="AddinDll" Source="$(var.AddinDir)\XboxControlAddin.dll" KeyPath="no" />
+        <RegistryValue Root="HKCU" Key="Software\XboxControl" Name="InstallFolder" Value="[INSTALLFOLDER]" Type="string" KeyPath="yes" />
+        <RemoveFolder Id="RemoveInstallFolder" Directory="INSTALLFOLDER" On="uninstall" />
+        <RemoveFolder Id="RemoveProgramsFolder" Directory="ProgramsFolder" On="uninstall" />
+
+        <!-- Same keys as "regasm /codebase", but per user, plus SolidWorks' add-in list. -->
+        <RegistryKey Root="HKCU" Key="Software\Classes\CLSID\$(var.AddinClsid)" ForceDeleteOnUninstall="yes">
+          <RegistryValue Value="$(var.AddinClass)" Type="string" />
+          <RegistryKey Key="InprocServer32">
+            <RegistryValue Value="mscoree.dll" Type="string" />
+            <RegistryValue Name="ThreadingModel" Value="Both" Type="string" />
+            <RegistryValue Name="Class" Value="$(var.AddinClass)" Type="string" />
+            <RegistryValue Name="Assembly" Value="XboxControlAddin, Version=$(var.AssemblyVersion), Culture=neutral, PublicKeyToken=null" Type="string" />
+            <RegistryValue Name="RuntimeVersion" Value="v4.0.30319" Type="string" />
+            <RegistryValue Name="CodeBase" Value="file:///[#AddinDll]" Type="string" />
+          </RegistryKey>
+          <RegistryKey Key="ProgId">
+            <RegistryValue Value="$(var.AddinProgId)" Type="string" />
+          </RegistryKey>
+          <RegistryKey Key="Implemented Categories\{62C8FE65-4EBB-45E7-B440-6E39B2CDBF29}" ForceCreateOnInstall="yes" />
+        </RegistryKey>
+        <RegistryKey Root="HKCU" Key="Software\Classes\$(var.AddinProgId)" ForceDeleteOnUninstall="yes">
+          <RegistryValue Value="$(var.AddinClass)" Type="string" />
+          <RegistryKey Key="CLSID">
+            <RegistryValue Value="$(var.AddinClsid)" Type="string" />
+          </RegistryKey>
+        </RegistryKey>
+        <RegistryKey Root="HKCU" Key="Software\SolidWorks\Addins\$(var.AddinClsid)" ForceDeleteOnUninstall="yes">
+          <RegistryValue Value="0" Type="integer" />
+          <RegistryValue Name="Title" Value="Xbox Control" Type="string" />
+          <RegistryValue Name="Description" Value="Move around models with an Xbox controller" Type="string" />
+        </RegistryKey>
+        <RegistryKey Root="HKCU" Key="Software\SolidWorks\AddInsStartup\$(var.AddinClsid)" ForceDeleteOnUninstall="yes">
+          <RegistryValue Value="1" Type="integer" />
+        </RegistryKey>
+      </Component>
+
+      <Component Id="SettingsExe" Guid="{444DBF0C-1F34-47A0-A797-E16925835FEF}">
+        <File Id="SettingsExe" Source="$(var.SettingsDir)\XboxControlSettings.exe" KeyPath="no">
+          <Shortcut Id="SettingsShortcut" Directory="ProgramMenuFolder" Name="Xbox Control Settings"
+                    Description="Choose what each Xbox controller button does in SolidWorks"
+                    WorkingDirectory="INSTALLFOLDER" Icon="AppIcon" Advertise="no" />
+        </File>
+        <RegistryValue Root="HKCU" Key="Software\XboxControl" Name="SettingsApp" Value="[#SettingsExe]" Type="string" KeyPath="yes" />
+      </Component>
+
+      <Component Id="Docs" Guid="{140741D3-5FE4-4F6E-BB46-14096EB33157}">
+        <File Id="LicenseTxt" Source="$(var.RepoDir)\LICENSE.txt" KeyPath="no" />
+        <File Id="ReadmeMd" Source="$(var.RepoDir)\README.md" KeyPath="no" />
+        <RegistryValue Root="HKCU" Key="Software\XboxControl" Name="Version" Value="$(var.ProductVersion)" Type="string" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Package>
+</Wix>

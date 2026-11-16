@@ -23,6 +23,7 @@
     <!-- The add-in is .NET Framework 4.8, so its SolidWorks-free logic is compiled in here directly. -->
     <Compile Include="..\Xbox Control.Addin\OrbitNavigator.cs" Link="Addin\OrbitNavigator.cs" />
     <Compile Include="..\Xbox Control.Addin\NavigationSettings.cs" Link="Addin\NavigationSettings.cs" />
+    <Compile Include="..\Xbox Control.Addin\ControlMapping.cs" Link="Addin\ControlMapping.cs" />
   </ItemGroup>
 
   <ItemGroup>

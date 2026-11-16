@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -24,7 +25,11 @@ namespace XboxControl.Addin
         private readonly ViewDriver driver;
         private readonly WinFormsTimer timer;
         private readonly Stopwatch clock = Stopwatch.StartNew();
-        private readonly List<ViewCommand> commands = new();
+        private readonly List<ButtonAction> commands = new();
+        private readonly string settingsPath;
+        private readonly Action openSettings;
+        private DateTime settingsStamp;
+        private double nextSettingsCheck;
         private readonly int processId = Process.GetCurrentProcess().Id;
         private double lastTick;
         private string status = "";
@@ -35,9 +40,13 @@ namespace XboxControl.Addin
         private string? flash;
         private double flashUntil;
 
-        public NavigationLoop(ISldWorks sw, NavigationSettings settings)
+        public NavigationLoop(ISldWorks sw, string settingsPath, Action openSettings)
         {
             this.sw = sw;
+            this.settingsPath = settingsPath;
+            this.openSettings = openSettings;
+            var settings = NavigationSettings.LoadOrCreate(settingsPath);
+            settingsStamp = File.GetLastWriteTimeUtc(settingsPath);
             navigator = new OrbitNavigator(settings);
             driver = new ViewDriver { BatchRedraw = settings.BatchRedraw };
             timer = new WinFormsTimer { Interval = Math.Max(1, settings.TickMs) };
@@ -86,6 +95,11 @@ namespace XboxControl.Addin
             double now = clock.Elapsed.TotalSeconds;
             double dt = now - lastTick;
             lastTick = now;
+            if (now >= nextSettingsCheck)
+            {
+                nextSettingsCheck = now + 1;
+                ReloadSettingsIfChanged(now);
+            }
 
             GamepadSnapshot input;
             OrbitNavigator nav = navigator;
@@ -118,6 +132,11 @@ namespace XboxControl.Addin
 
             commands.Clear();
             var motion = nav.Update(input, dt, commands);
+            if (commands.Remove(ButtonAction.OpenSettings))
+            {
+                openSettings(); // works with no document open
+                Flash("Opening settings", now);
+            }
             if (selfTest == null) SetStatus(Describe());
             if (commands.Count == 0 && motion.IsNone) return;
 
@@ -136,9 +155,34 @@ namespace XboxControl.Addin
 
         private string Describe()
         {
-            if (navigator.Paused) return $"Xbox controller {pad.PlayerNumber}: paused (press Start to resume)";
-            string text = $"Xbox controller {pad.PlayerNumber}: orbit{(navigator.Precision ? ", precision" : "")}";
+            if (navigator.Paused)
+            {
+                var resume = navigator.Settings.Buttons.FirstOrDefault(kv => kv.Value == ButtonAction.TogglePause).Key;
+                return $"Xbox controller {pad.PlayerNumber}: paused (press {ControlMapping.Label(resume)} to resume)";
+            }
+            string text = $"Xbox controller {pad.PlayerNumber}: ready{(navigator.Precision ? ", precision mode" : "")}";
             return flash != null && clock.Elapsed.TotalSeconds < flashUntil ? $"{text}  |  {flash}" : text;
+        }
+
+        /// <summary>Picks up changes from the settings app (or a hand edit) without a restart.</summary>
+        private void ReloadSettingsIfChanged(double now)
+        {
+            try
+            {
+                var stamp = File.GetLastWriteTimeUtc(settingsPath);
+                if (stamp == settingsStamp) return;
+                var settings = NavigationSettings.LoadOrCreate(settingsPath);
+                settingsStamp = stamp;
+                navigator.ApplySettings(settings);
+                driver.BatchRedraw = settings.BatchRedraw;
+                timer.Interval = Math.Max(1, settings.TickMs);
+                Flash("Settings updated", now);
+                Log.Info("Settings reloaded");
+            }
+            catch (IOException)
+            {
+                // Being written right now; try again next second.
+            }
         }
 
         /// <summary>Shows what a button did in the status bar for a couple of seconds.</summary>
@@ -184,7 +228,7 @@ namespace XboxControl.Addin
             if ((object)sw.ActiveDoc is not IModelDoc2 doc || (object)doc.ActiveView is not IModelView view) return "no active document";
             driver.BatchRedraw = batchRedraw;
             selfTest = new SelfTest(scenario, Math.Max(1, seconds), clock.Elapsed.TotalSeconds,
-                ViewState.Capture(view), new OrbitNavigator(navigator.Settings), batchRedraw);
+                ViewState.Capture(view), new OrbitNavigator(new NavigationSettings()), batchRedraw); // default mapping
             SelfTestResult = "";
             return "started";
         }
