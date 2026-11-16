@@ -45,19 +45,40 @@ namespace XboxControl.Addin
             bool is3D = Is3D(doc);
             switch (command)
             {
-                case ViewCommand.ZoomToFit: doc.ViewZoomtofit2(); return null;
-                case ViewCommand.Isometric when is3D: doc.ShowNamedView2("*Isometric", ViewIsometric); return null;
-                case ViewCommand.Front when is3D: doc.ShowNamedView2("*Front", ViewFront); return null;
-                case ViewCommand.Top when is3D: doc.ShowNamedView2("*Top", ViewTop); return null;
-                case ViewCommand.Left when is3D: doc.ShowNamedView2("*Left", ViewLeft); return null;
-                case ViewCommand.Right when is3D: doc.ShowNamedView2("*Right", ViewRight); return null;
+                case ViewCommand.ZoomToFit:
+                    doc.ViewZoomtofit2();
+                    return "Zoom to fit";
+                case ViewCommand.ZoomToSelection:
+                    if (((ISelectionMgr)(object)doc.SelectionManager).GetSelectedObjectCount2(-1) == 0)
+                        return "Select something first, then press B to zoom to it";
+                    doc.ViewZoomToSelection();
+                    return "Zoom to selection";
+                case ViewCommand.Isometric when is3D: return NamedView(doc, "*Isometric", ViewIsometric, "Isometric view");
+                case ViewCommand.Front when is3D: return NamedView(doc, "*Front", ViewFront, "Front view");
+                case ViewCommand.Top when is3D: return NamedView(doc, "*Top", ViewTop, "Top view");
+                case ViewCommand.Left when is3D: return NamedView(doc, "*Left", ViewLeft, "Left view");
+                case ViewCommand.Right when is3D: return NamedView(doc, "*Right", ViewRight, "Right view");
                 case ViewCommand.TogglePerspective when is3D:
                     bool on = !view.HasPerspective();
                     if (on) view.AddPerspective(); else view.RemovePerspective();
                     view.GraphicsRedraw(null);
-                    return on ? "perspective on" : "perspective off";
-                default: return null;
+                    return on ? "Perspective on" : "Perspective off";
+                case ViewCommand.Isometric:
+                case ViewCommand.Front:
+                case ViewCommand.Top:
+                case ViewCommand.Left:
+                case ViewCommand.Right:
+                case ViewCommand.TogglePerspective:
+                    return "Not available in drawings";
+                default:
+                    return null;
             }
+        }
+
+        private static string NamedView(IModelDoc2 doc, string name, int id, string message)
+        {
+            doc.ShowNamedView2(name, id);
+            return message;
         }
 
         private static bool Is3D(IModelDoc2 doc)

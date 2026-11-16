@@ -29,7 +29,11 @@ namespace XboxControl.Addin
         private double lastTick;
         private string status = "";
         private int consecutiveErrors;
+        private bool ticking;
         private SelfTest? selfTest;
+        private readonly Queue<GamepadButtons> injected = new();
+        private string? flash;
+        private double flashUntil;
 
         public NavigationLoop(ISldWorks sw, NavigationSettings settings)
         {
@@ -55,6 +59,10 @@ namespace XboxControl.Addin
 
         private void OnTick(object? sender, EventArgs e)
         {
+            // SolidWorks pumps messages during some calls (view-change animations), which would
+            // run the next tick inside this one.
+            if (ticking) return;
+            ticking = true;
             try
             {
                 Tick();
@@ -66,6 +74,10 @@ namespace XboxControl.Addin
                 // land here; log the first few and keep going.
                 if (consecutiveErrors++ < 5) Log.Error("tick", ex);
                 if (selfTest != null) FinishSelfTest($"Self-test stopped: {ex.Message}");
+            }
+            finally
+            {
+                ticking = false;
             }
         }
 
@@ -83,6 +95,11 @@ namespace XboxControl.Addin
                 if (t >= selfTest.Seconds) { FinishSelfTest(null); return; }
                 input = selfTest.Input(t);
                 nav = selfTest.Navigator;
+            }
+            else if (injected.Count > 0)
+            {
+                // Simulated button press (diagnostics): bypasses the controller and focus checks.
+                input = new GamepadSnapshot(0, 0, 0, 0, 0, 0, injected.Dequeue());
             }
             else
             {
@@ -107,7 +124,10 @@ namespace XboxControl.Addin
             if ((object)sw.ActiveDoc is not IModelDoc2 doc || (object)doc.ActiveView is not IModelView view) return;
 
             foreach (var command in commands)
-                driver.Run(doc, view, command);
+            {
+                var message = driver.Run(doc, view, command);
+                if (message != null) Flash(message, now);
+            }
 
             long start = Stopwatch.GetTimestamp();
             driver.Apply(doc, view, motion);
@@ -117,7 +137,27 @@ namespace XboxControl.Addin
         private string Describe()
         {
             if (navigator.Paused) return $"Xbox controller {pad.PlayerNumber}: paused (press Start to resume)";
-            return $"Xbox controller {pad.PlayerNumber}: orbit{(navigator.Precision ? ", precision" : "")}";
+            string text = $"Xbox controller {pad.PlayerNumber}: orbit{(navigator.Precision ? ", precision" : "")}";
+            return flash != null && clock.Elapsed.TotalSeconds < flashUntil ? $"{text}  |  {flash}" : text;
+        }
+
+        /// <summary>Shows what a button did in the status bar for a couple of seconds.</summary>
+        private void Flash(string message, double now)
+        {
+            flash = message;
+            flashUntil = now + 2.5;
+            if (selfTest == null) SetStatus(Describe());
+        }
+
+        /// <summary>Diagnostics: press and release buttons (comma-separated GamepadButtons names).</summary>
+        public string PressButtons(string names)
+        {
+            if (!Enum.TryParse(names, true, out GamepadButtons buttons) || buttons == GamepadButtons.None)
+                return $"unknown buttons '{names}'";
+            injected.Enqueue(GamepadButtons.None); // release first, so the press is a new press
+            injected.Enqueue(buttons);
+            injected.Enqueue(GamepadButtons.None);
+            return "queued";
         }
 
         private void SetStatus(string text)

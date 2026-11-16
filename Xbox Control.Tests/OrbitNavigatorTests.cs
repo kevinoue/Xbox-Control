@@ -50,11 +50,13 @@ public class OrbitNavigatorTests
     }
 
     [Fact]
-    public void Left_stick_pans_in_view_heights_per_second()
+    public void Left_stick_moves_the_camera_in_view_heights_per_second()
     {
+        // Stick right/down moves the camera right/down, so the model moves left/up on screen.
         var m = Step(Ready(), Pad(lx: 1, ly: -1), dt: 0.1);
-        Assert.Equal(0.1, m.PanX, 9);
-        Assert.Equal(-0.1, m.PanY, 9);
+        Assert.Equal(-0.1, m.PanX, 9);
+        Assert.Equal(0.1, m.PanY, 9);
+        Assert.Equal(0.1, Step(Ready(new NavigationSettings { InvertPanX = true }), Pad(lx: 1), dt: 0.1).PanX, 9);
     }
 
     [Fact]
@@ -123,6 +125,7 @@ public class OrbitNavigatorTests
         var expected = new (GamepadButtons, ViewCommand)[]
         {
             (GamepadButtons.A, ViewCommand.ZoomToFit),
+            (GamepadButtons.B, ViewCommand.ZoomToSelection),
             (GamepadButtons.Y, ViewCommand.Isometric),
             (GamepadButtons.X, ViewCommand.TogglePerspective),
             (GamepadButtons.DPadUp, ViewCommand.Top),

@@ -6,6 +6,8 @@ using SwTools;
 // AddinDev load <dll>            load the add-in into the running SolidWorks
 // AddinDev unload <dll>          unload it
 // AddinDev status                the add-in's status text
+// AddinDev press <buttons>       press and release controller buttons (e.g. Y, "A,DPadUp")
+// AddinDev saveview / restoreview <file>   save and restore the active view
 // AddinDev selftest [combo|rotate|pan|zoom] [seconds] [--nobatch]
 //                                synthetic stick input through the add-in's own loop, inside
 //                                SolidWorks; the view is restored afterwards
@@ -35,6 +37,41 @@ switch (cmd)
     case "status":
         Console.WriteLine(Call(Addin(), "GetStatus"));
         return 0;
+    case "press":
+        Console.WriteLine($"press {args[1]}: {Call(Addin(), "PressButtons", args[1])}");
+        Thread.Sleep(1500); // let the add-in run it (and any view animation finish)
+        Console.WriteLine(Call(Addin(), "GetStatus"));
+        return 0;
+    case "saveview":
+    case "restoreview":
+    {
+        var view = (IModelView)((IModelDoc2)sw.ActiveDoc).ActiveView;
+        var math = (IMathUtility)sw.GetMathUtility();
+        string file = args[1];
+        if (cmd == "saveview")
+        {
+            var parts = ((double[])view.Orientation3.ArrayData)
+                .Concat((double[])view.Translation3.ArrayData)
+                .Append(view.Scale2).Append(view.HasPerspective() ? 1 : 0);
+            File.WriteAllText(file, string.Join(" ", parts.Select(d => d.ToString("R"))));
+        }
+        else
+        {
+            var d = File.ReadAllText(file).Split(' ').Select(double.Parse).ToArray();
+            int n = d.Length; // orientation (16) + translation (3) + scale + perspective
+            if ((d[n - 1] == 1) != view.HasPerspective())
+            {
+                if (d[n - 1] == 1) view.AddPerspective(); else view.RemovePerspective();
+            }
+            // Scale2 multiplies Translation3, so translation goes last.
+            view.Orientation3 = (MathTransform)math.CreateTransform(d[..(n - 5)]);
+            view.Scale2 = d[n - 2];
+            view.Translation3 = (MathVector)math.CreateVector(d[(n - 5)..(n - 2)]);
+            view.GraphicsRedraw(null);
+        }
+        Console.WriteLine($"{cmd} {file}");
+        return 0;
+    }
     case "selftest":
     {
         string scenario = args.Length > 1 && !args[1].StartsWith("--") ? args[1] : "combo";

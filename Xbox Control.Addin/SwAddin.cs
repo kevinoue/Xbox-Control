@@ -73,6 +73,9 @@ namespace XboxControl.Addin
 
         public string GetSelfTestResult() => loop?.SelfTestResult ?? "";
 
+        /// <summary>Press and release controller buttons, e.g. "Y" or "A,DPadUp".</summary>
+        public string PressButtons(string names) => loop?.PressButtons(names) ?? "not connected";
+
         // ---- registration (regasm /codebase, as administrator) -----------------------------
         // tools/register-addin.ps1 writes the same keys per user without administrator rights.
 

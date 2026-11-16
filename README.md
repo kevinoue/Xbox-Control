@@ -13,10 +13,11 @@ Use one or the other at a time, not both.
 | Controller | Action |
 |---|---|
 | Right stick | Orbit (the model follows the stick) |
-| Left stick | Pan |
+| Left stick | Pan (moves the camera: push right to see further right) |
 | RT / LT | Zoom in / out (pull harder = faster) |
 | LB / RB | Roll left / right |
 | A | Zoom to fit |
+| B | Zoom to selection (click a part or face first) |
 | Y | Isometric |
 | D-pad up / down / left / right | Top / Front / Left / Right view |
 | X | Perspective on / off |
@@ -24,7 +25,7 @@ Use one or the other at a time, not both.
 | Start | Pause / resume the controller |
 
 The view only moves while SolidWorks is the active window. The SolidWorks status bar shows
-the controller state. Drawings pan and zoom only.
+the controller state and what each button just did. Drawings pan and zoom only.
 
 Speeds, stick curve and axis inversion are in `%APPDATA%\XboxControl\addin.ini` (created on
 first load). Problems are logged to `%LOCALAPPDATA%\XboxControl\addin.log`.
@@ -38,7 +39,8 @@ dotnet build "Xbox Control.Addin"
 
 The script registers the add-in for the current user (no administrator rights) and copies it
 to `%LOCALAPPDATA%\XboxControl\Addin\<version>\`, so SolidWorks never locks the build output.
-Restart SolidWorks, or load it into the running one:
+SolidWorks loads it at startup. To load it into a running SolidWorks that hasn't loaded it yet
+(a running SolidWorks keeps whichever version it loaded first, so a new build needs a restart):
 
 ```
 tools\AddinDev\bin\Debug\net10.0-windows\AddinDev.exe load "%LOCALAPPDATA%\XboxControl\Addin\<version>\XboxControlAddin.dll"

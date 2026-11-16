@@ -7,6 +7,7 @@ namespace XboxControl.Addin
     public enum ViewCommand
     {
         ZoomToFit,
+        ZoomToSelection,
         Isometric,
         Front,
         Top,
@@ -33,12 +34,14 @@ namespace XboxControl.Addin
     }
 
     /// <summary>
-    /// Turns controller state into view motion ("object mode": the model follows the stick, like
-    /// dragging it with the mouse). Pure logic, no SolidWorks calls, so it is unit-tested.
+    /// Turns controller state into view motion. Pure logic, no SolidWorks calls, so it is unit-tested.
+    /// The right stick turns the model (it follows the stick, like dragging it with the mouse); the
+    /// left stick moves the camera (push right to see further right), as in a walk-through.
     ///
     ///   Right stick  orbit            Left stick   pan
     ///   RT / LT      zoom in / out    LB / RB      roll left / right
-    ///   A            zoom to fit      Y            isometric
+    ///   A            zoom to fit      B            zoom to selection
+    ///   Y            isometric
     ///   D-pad        top / front / left / right views
     ///   X            perspective on/off
     ///   Left stick click  precision (slow) on/off
@@ -54,6 +57,7 @@ namespace XboxControl.Addin
         private static readonly (GamepadButtons Button, ViewCommand Command)[] ButtonCommands =
         {
             (GamepadButtons.A, ViewCommand.ZoomToFit),
+            (GamepadButtons.B, ViewCommand.ZoomToSelection),
             (GamepadButtons.Y, ViewCommand.Isometric),
             (GamepadButtons.X, ViewCommand.TogglePerspective),
             (GamepadButtons.DPadUp, ViewCommand.Top),
@@ -104,8 +108,8 @@ namespace XboxControl.Addin
             double pitch = -Curve(pad.RightY) * rotate * Sign(s.InvertOrbitY); // stick up = front up
             double roll = ((pad.IsDown(GamepadButtons.LeftShoulder) ? 1 : 0) - (pad.IsDown(GamepadButtons.RightShoulder) ? 1 : 0))
                           * s.RollSpeedDeg * Math.PI / 180 * k;
-            double panX = Curve(pad.LeftX) * s.PanSpeed * k * Sign(s.InvertPanX);
-            double panY = Curve(pad.LeftY) * s.PanSpeed * k * Sign(s.InvertPanY);
+            double panX = -Curve(pad.LeftX) * s.PanSpeed * k * Sign(s.InvertPanX); // camera moves right,
+            double panY = -Curve(pad.LeftY) * s.PanSpeed * k * Sign(s.InvertPanY); // so the model moves left
             double z = Curve(pad.RightTrigger) - Curve(pad.LeftTrigger);
             double zoom = z == 0 ? 1 : Math.Pow(Math.Max(1.01, s.ZoomSpeed), z * k);
 
