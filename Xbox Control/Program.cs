@@ -1,6 +1,3 @@
-using System;
-using System.Windows.Forms;
-
 namespace Xbox_Control
 {
     static class Program
@@ -8,12 +5,21 @@ namespace Xbox_Control
         [STAThread]
         static void Main()
         {
-            // Enable visual styles and set text rendering
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
+            var keyboard = new KeyboardOutput();
 
-            // Start the application with Form1
-            Application.Run(new Form1());
+            // Whatever goes wrong, release every key first so nothing stays stuck down system-wide.
+            Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+            Application.ThreadException += (_, e) =>
+            {
+                keyboard.ReleaseEverything();
+                MessageBox.Show(e.Exception.ToString(), "Xbox Control error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Application.Exit();
+            };
+            AppDomain.CurrentDomain.UnhandledException += (_, _) => keyboard.ReleaseEverything();
+            AppDomain.CurrentDomain.ProcessExit += (_, _) => keyboard.ReleaseAll();
+
+            ApplicationConfiguration.Initialize();
+            Application.Run(new Form1(keyboard));
         }
     }
 }
