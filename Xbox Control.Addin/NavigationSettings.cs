@@ -15,7 +15,7 @@ namespace XboxControl.Addin
     {
         public double RotateSpeedDeg { get; set; } = 160;  // degrees per second at full stick
         public double PanSpeed { get; set; } = 1.0;        // view heights per second at full stick
-        public double ZoomSpeed { get; set; } = 3.0;       // zoom factor per second at full trigger
+        public double ZoomSpeed { get; set; } = 3.0;       // zoom factor per second, left stick fully forward
         public double RollSpeedDeg { get; set; } = 90;     // degrees per second while LB/RB is held
         public double PrecisionScale { get; set; } = 0.25; // speed multiplier in precision mode
         public double Expo { get; set; } = 0.5;            // 0 = linear sticks, 1 = cubic (finer near center)
@@ -23,6 +23,7 @@ namespace XboxControl.Addin
         public bool InvertOrbitY { get; set; }
         public bool InvertPanX { get; set; }
         public bool InvertPanY { get; set; }
+        public bool InvertForward { get; set; }
         public int TickMs { get; set; } = 10;              // timer interval (Windows rounds up to ~15.6 ms)
         public bool BatchRedraw { get; set; } = true;      // apply all axes, then redraw once
 

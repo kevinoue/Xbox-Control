@@ -13,8 +13,8 @@ Use one or the other at a time, not both.
 | Controller | Action |
 |---|---|
 | Right stick | Orbit (the model follows the stick) |
-| Left stick | Pan (moves the camera: push right to see further right) |
-| RT / LT | Zoom in / out (pull harder = faster) |
+| Left stick | Forward / back (zoom in / out) and left / right |
+| RT / LT | Up / down |
 | LB / RB | Roll left / right |
 | A | Zoom to fit |
 | B | Zoom to selection (click a part or face first) |

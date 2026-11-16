@@ -50,22 +50,33 @@ public class OrbitNavigatorTests
     }
 
     [Fact]
-    public void Left_stick_moves_the_camera_in_view_heights_per_second()
+    public void Left_stick_sideways_moves_the_camera_in_view_heights_per_second()
     {
-        // Stick right/down moves the camera right/down, so the model moves left/up on screen.
-        var m = Step(Ready(), Pad(lx: 1, ly: -1), dt: 0.1);
+        // Stick right moves the camera right, so the model moves left on screen.
+        var m = Step(Ready(), Pad(lx: 1), dt: 0.1);
         Assert.Equal(-0.1, m.PanX, 9);
-        Assert.Equal(0.1, m.PanY, 9);
+        Assert.Equal(0, m.PanY);
         Assert.Equal(0.1, Step(Ready(new NavigationSettings { InvertPanX = true }), Pad(lx: 1), dt: 0.1).PanX, 9);
     }
 
     [Fact]
-    public void Triggers_zoom_in_and_out_and_cancel_when_both_pulled()
+    public void Left_stick_forward_and_back_zooms_in_and_out()
     {
         var nav = Ready();
-        Assert.Equal(Math.Pow(3, 0.1), Step(nav, Pad(rt: 1), dt: 0.1).Zoom, 9);
-        Assert.Equal(Math.Pow(3, -0.1), Step(nav, Pad(lt: 1), dt: 0.1).Zoom, 9);
-        Assert.Equal(1, Step(nav, Pad(lt: 1, rt: 1)).Zoom);
+        Assert.Equal(Math.Pow(3, 0.1), Step(nav, Pad(ly: 1), dt: 0.1).Zoom, 9);
+        Assert.Equal(Math.Pow(3, -0.1), Step(nav, Pad(ly: -1), dt: 0.1).Zoom, 9);
+        Assert.Equal(0, Step(nav, Pad(ly: 1)).PanY);
+        Assert.True(Step(Ready(new NavigationSettings { InvertForward = true }), Pad(ly: 1)).Zoom < 1);
+    }
+
+    [Fact]
+    public void Triggers_move_the_camera_up_and_down_and_cancel_when_both_pulled()
+    {
+        var nav = Ready();
+        Assert.Equal(-0.1, Step(nav, Pad(rt: 1), dt: 0.1).PanY, 9); // camera up, model down
+        Assert.Equal(0.1, Step(nav, Pad(lt: 1), dt: 0.1).PanY, 9);
+        Assert.Equal(0, Step(nav, Pad(lt: 1, rt: 1)).PanY);
+        Assert.Equal(1, Step(nav, Pad(rt: 1)).Zoom);
     }
 
     [Fact]

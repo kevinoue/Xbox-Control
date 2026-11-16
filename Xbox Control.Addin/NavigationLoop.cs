@@ -235,8 +235,8 @@ namespace XboxControl.Addin
                 {
                     "rotate" => new GamepadSnapshot(0, 0, 0.8f * d, 0, 0, 0, GamepadButtons.None),
                     "pan" => new GamepadSnapshot(0.8f * d, 0, 0, 0, 0, 0, GamepadButtons.None),
-                    "zoom" => new GamepadSnapshot(0, 0, 0, 0, lt, rt, GamepadButtons.None),
-                    _ => new GamepadSnapshot(0.4f * d, 0.2f * d, 0.7f * d, 0.3f * d, lt, rt, GamepadButtons.None),
+                    "zoom" => new GamepadSnapshot(0, 0.8f * d, 0, 0, 0, 0, GamepadButtons.None),
+                    _ => new GamepadSnapshot(0.4f * d, 0.4f * d, 0.7f * d, 0.3f * d, lt, rt, GamepadButtons.None),
                 };
             }
 
